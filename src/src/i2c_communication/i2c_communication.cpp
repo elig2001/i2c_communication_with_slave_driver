@@ -29,6 +29,31 @@ extern "C"
 
         if (0xff != temp)
         {
+            Serial.printf("ERROR: sanity returned %lu instead of 0xff\n", temp);
+            command_result = COMMAND_RESULT__FAILURE;
+            goto l_exit;
+        }
+
+        command_result = COMMAND_RESULT__SUCCESS;
+
+    l_exit:
+        return command_result;
+    }
+
+    command_result_e i2c_communication__read_strength_gauge(uint8_t slave_address, int16_t* psi)
+    {
+        command_result_e command_result = COMMAND_RESULT__UNINITIALIZED;
+
+        if (NULL == psi)
+        {
+            command_result = COMMAND_RESULT__INVALID_PARAMS;
+            goto l_exit;
+        }
+
+        send_command(slave_address, COMMAND_ID__READ, RESOURCE_TYPE__BRIDGE_DATA, 2);
+
+        if (!read_result(slave_address, 2, (uint8_t*)psi))
+        {
             command_result = COMMAND_RESULT__FAILURE;
             goto l_exit;
         }
@@ -102,6 +127,12 @@ extern "C"
         }
 
         Wire.readBytes(destination_buffer, amount_of_received_bytes);
+
+        for (size_t i = 0; i < amount_of_received_bytes; i++)
+        {
+            Serial.printf("%d. %d\n", i, destination_buffer[i]);
+        }
+        
 
         return true;
     }

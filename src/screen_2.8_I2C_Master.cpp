@@ -20,6 +20,7 @@ static void print_result(uint8_t slave_address, uint8_t length);
 static void send_command(uint8_t slave_address, command_id_e command, resource_type_e resource_type, uint8_t length);
 static void read_serial_number(uint8_t slave_address);
 static bool send_sanity(uint8_t slave_address);
+static void create_padded_string(uint8_t* string, int32_t value, uint8_t wanted_length);
 
 byte dataToSend = 0x42; // Data to send
 
@@ -48,7 +49,7 @@ void setup()
 
   // Wire.setTimeOut(0);
 
-  sprintf(DeviceName, "CRUSOE-O2 pressure", 1);
+  sprintf(DeviceName, "CRUSOE-O2 Strength Gauge", 1);
   Serial.println(DeviceName);
 
   SerialBT.begin(DeviceName); // Bluetooth device name
@@ -58,7 +59,7 @@ void setup()
 
   // Ideally set orientation for good viewing angle range because
   // the anti-aliasing effectiveness varies with screen viewing angle
-  // g_tft.setRotation();
+  g_tft.setRotation(1);
 
   g_tft.fillScreen(TFT_BLACK);
 
@@ -115,4 +116,46 @@ void setup()
 
 void loop()
 {
+  int16_t psi = 0;
+  uint8_t string[10] = {0};
+
+
+
+  delay(200);
+
+  if(i2c_communication__read_strength_gauge(SLAVE_ADDRESS, &psi))
+  {
+    Serial.printf("PSI = %d\n", psi);
+
+    create_padded_string(string, psi, 7);
+
+    g_tft.setTextSize(4);
+    g_tft.setTextFont(1);
+    g_tft.setTextDatum(MC_DATUM);
+    g_tft.drawString((char*)string, (int32_t)g_tft.width() / 2, (int32_t)g_tft.height() / 2 - 10);
+
+  }
+  else
+  {
+    Serial.printf("PSI READ FAILED!\n");
+  }
+  
+  
+}
+
+static void create_padded_string(uint8_t* string, int32_t value, uint8_t wanted_length)
+{
+
+  memset(string, 0, wanted_length);
+
+  sprintf((char*)string, "%d", value);
+
+  for (size_t i = 0; i < wanted_length; i++)
+  {
+    if(string[i] == 0)
+    {
+      string[i] = (uint8_t)32; // 32 is a single space
+    }
+  }
+  
 }
